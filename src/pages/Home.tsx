@@ -1,9 +1,10 @@
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "../components/ui/tooltip";
+} from "@/components/ui/tooltip";
 
 export default function Home() {
   return (
@@ -50,6 +51,9 @@ export default function Home() {
           </div>
         </TooltipProvider>
       </section>
+      <div>
+        <Button>See more</Button>
+      </div>
     </>
   );
 }
