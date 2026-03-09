@@ -8,9 +8,11 @@ import {
 
 export default function Home() {
   return (
-    <>
+    <div className="min-h-screen flex items-center">
       <section className="container w-3xl mx-auto text-left">
-        <h1 className="font-semibold mb-6 pointer-events-none">I'm Arien</h1>
+        <h1 className="font-semibold text-6xl mb-6 pointer-events-none">
+          I'm Arien
+        </h1>
         <TooltipProvider>
           <div id="home-description">
             <span>Software engineer — I love </span>
@@ -54,6 +56,6 @@ export default function Home() {
       <div>
         <Button>See more</Button>
       </div>
-    </>
+    </div>
   );
 }
