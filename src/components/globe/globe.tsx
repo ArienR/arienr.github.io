@@ -1,10 +1,8 @@
 import createGlobe, { type COBEOptions, type Marker } from "cobe";
 import { useEffect, useRef } from "react";
 
-// Fixed canvas buffer — large enough for quality at any CSS display size
-const BUFFER = 1000;
-const SCALE_MIN = 0.4;
-const SCALE_MAX = 5;
+const SCALE_MIN = 0.2;
+const SCALE_MAX = 2;
 
 type GlobeProps = {
   markers?: Marker[];
@@ -45,7 +43,6 @@ export function Globe({
   const pinchRef = useRef<{ id0: number; id1: number; dist: number } | null>(
     null,
   );
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -53,10 +50,17 @@ export function Globe({
     const dpr = window.devicePixelRatio || 2;
     let animationId: number;
 
+    // Use the actual CSS canvas size so COBE positions anchor divs correctly.
+    // COBE derives CSS canvas size as width/devicePixelRatio — if we pass a
+    // fixed BUFFER here instead of the real CSS size, anchor divs are placed
+    // in a smaller coordinate space than the displayed canvas, shifting all
+    // tooltips to the wrong position.
+    let cssSize = canvas.getBoundingClientRect().width;
+
     const globe = createGlobe(canvas, {
       devicePixelRatio: dpr,
-      width: BUFFER * dpr,
-      height: BUFFER * dpr,
+      width: cssSize * dpr,
+      height: cssSize * dpr,
       phi: phiRef.current,
       theta: thetaRef.current,
       dark: -1,
@@ -91,14 +95,13 @@ export function Globe({
         theta: thetaRef.current,
         scale: scaleRef.current,
       });
-      animationId = requestAnimationFrame(animate);
+animationId = requestAnimationFrame(animate);
     }
     animate();
 
-    // Cache canvas CSS size — updated on resize to avoid getBoundingClientRect per move
-    let cssSize = canvas.getBoundingClientRect().width;
     const ro = new ResizeObserver(() => {
       cssSize = canvas!.getBoundingClientRect().width;
+      globe.update({ width: cssSize * dpr, height: cssSize * dpr });
     });
     ro.observe(canvas);
 
@@ -200,11 +203,20 @@ export function Globe({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The wrapper must be a fixed, square div matching the canvas CSS dimensions.
+  // COBE injects its own relative wrapper (width:100%;height:100%) around the
+  // canvas to host 1px anchor divs for CSS anchor positioning. If the canvas
+  // itself is `position:fixed`, it's out of normal flow and that COBE wrapper
+  // collapses to 0×0 — breaking anchor div placement. By making the canvas
+  // `absolute` inside our fixed square div, the COBE wrapper inherits the
+  // correct max(vw,vh)×max(vw,vh) dimensions and anchor divs land in the right place.
   return (
-    <canvas
-      ref={canvasRef}
-      className="cursor-grab active:cursor-grabbing fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[max(100vw,100vh)] h-[max(100vw,100vh)]"
-      style={{ contain: "layout paint size" }}
-    />
+    <div className="fixed top-[calc(50vh-max(50vw,50vh))] left-[calc(50vw-max(50vw,50vh))] w-[max(100vw,100vh)] h-[max(100vw,100vh)] pointer-events-none">
+      <canvas
+        ref={canvasRef}
+        className="cursor-grab active:cursor-grabbing absolute inset-0 w-full h-full pointer-events-auto"
+        style={{ contain: "layout paint size" }}
+      />
+    </div>
   );
 }

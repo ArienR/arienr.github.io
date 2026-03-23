@@ -1,25 +1,59 @@
 import { Globe } from "@/components/globe/globe";
-import { type Marker } from "cobe";
-
-const MARKERS: Marker[] = [
-  { location: [52.37, 4.9], size: 0.05 }, // Amsterdam
-  { location: [48.85, 2.35], size: 0.05 }, // Paris
-  { location: [51.51, -0.13], size: 0.05 }, // London
-  { location: [41.9, 12.5], size: 0.05 }, // Rome
-  { location: [40.42, -3.7], size: 0.05 }, // Madrid
-  { location: [37.98, 23.73], size: 0.05 }, // Athens
-  { location: [55.75, 37.62], size: 0.05 }, // Moscow
-  { location: [35.69, 139.69], size: 0.05 }, // Tokyo
-  { location: [1.35, 103.82], size: 0.05 }, // Singapore
-  { location: [-33.87, 151.21], size: 0.05 }, // Sydney
-  { location: [40.71, -74.01], size: 0.05 }, // New York
-  { location: [34.05, -118.24], size: 0.05 }, // Los Angeles
-  { location: [-22.9, -43.17], size: 0.05 }, // Rio
-  { location: [19.43, -99.13], size: 0.05 }, // Mexico City
-  { location: [30.04, 31.24], size: 0.05 }, // Cairo
-  { location: [-26.2, 28.04], size: 0.05 }, // Johannesburg
-];
+import photosData from "@/data/photos.json";
+import type { LocationWithCount, PhotosData } from "@/data/photos.types";
+import type { Marker } from "cobe";
 
 export default function TravelPhotography() {
-  return <Globe markers={MARKERS} />;
+  const { locations, photos } = photosData as unknown as PhotosData;
+
+  const photoCounts = photos.reduce<Record<string, number>>((acc, photo) => {
+    acc[photo.location] = (acc[photo.location] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const locationsWithCounts: LocationWithCount[] = locations.map((loc) => ({
+    ...loc,
+    photoCount: photoCounts[loc.id] ?? 0,
+  }));
+
+  const markers: Marker[] = locationsWithCounts.map(({ lat, lng, id }) => ({
+    location: [lat, lng] as [number, number],
+    size: 0.05,
+    id,
+  }));
+
+  return (
+    <>
+      <Globe markers={markers} />
+      {locationsWithCounts.map((loc) => {
+        const countLabel = loc.photoCount === 1 ? "1 photo" : `${loc.photoCount} photos`;
+        return (
+          <div
+            key={loc.id}
+            className="fixed flex flex-col items-center pointer-events-none"
+            style={{
+              // CSS Anchor Positioning — COBE creates a 1px div with
+              // `anchor-name: --cobe-{id}` and tracks it to the marker each frame.
+              // These three lines attach this badge to that anchor:
+              positionAnchor: `--cobe-${loc.id}`,
+              bottom: "anchor(top)",
+              left: "anchor(center)",
+              translate: "-50% -20%",
+              marginBottom: "10px",
+              // --cobe-visible-{id} is set to "N" by COBE when visible, unset when
+              // hidden. "N" is invalid for opacity, so CSS falls back to the initial
+              // value of 1. When unset, the fallback 0 hides the badge.
+              opacity: `var(--cobe-visible-${loc.id}, 0)`,
+              transition: "opacity 0.2s ease",
+            } as React.CSSProperties}
+          >
+            <div className="bg-foreground text-background px-2.5 py-1 text-xs font-medium whitespace-nowrap">
+              {loc.label} · {countLabel}
+            </div>
+            <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-t-[5px] border-l-transparent border-r-transparent border-t-foreground" />
+          </div>
+        );
+      })}
+    </>
+  );
 }

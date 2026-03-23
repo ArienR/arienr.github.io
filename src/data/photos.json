@@ -1,0 +1,13 @@
+{
+  "locations": [
+    { "id": "amsterdam", "label": "Amsterdam", "lat": 52.37, "lng": 4.9 },
+    { "id": "paris", "label": "Paris", "lat": 48.85, "lng": 2.35 },
+    { "id": "madrid", "label": "Madrid", "lat": 40.42, "lng": -3.7 },
+    { "id": "tokyo", "label": "Tokyo", "lat": 35.69, "lng": 139.69 },
+    { "id": "san-francisco", "label": "San Francisco", "lat": 37.77, "lng": -122.42 },
+    { "id": "christchurch", "label": "Christchurch", "lat": -43.53, "lng": 172.63 }
+  ],
+  "photos": [
+    {"src": "photos/photo-1.jpg", "location": "san-francisco", "alt": "Description" }
+  ]
+}
