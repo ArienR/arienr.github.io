@@ -8,6 +8,7 @@
     { "id": "christchurch", "label": "Christchurch", "lat": -43.53, "lng": 172.63 }
   ],
   "photos": [
-    {"src": "photos/photo-1.jpg", "location": "san-francisco", "alt": "Description" }
+    {"src": "photos/photo1.jpg", "location": "san-francisco", "alt": "Description" },
+    {"src": "photos/photo2.jpg", "location": "san-francisco", "alt": "Description" }
   ]
 }

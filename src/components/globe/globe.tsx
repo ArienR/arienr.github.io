@@ -6,6 +6,7 @@ const SCALE_MAX = 2;
 
 type GlobeProps = {
   markers?: Marker[];
+  onMarkerClick?: (id: string) => void;
 } & Partial<
   Pick<
     COBEOptions,
@@ -21,6 +22,7 @@ type GlobeProps = {
 
 export function Globe({
   markers = [],
+  onMarkerClick,
   baseColor = [0.8, 0.35, 0.08],
   markerColor = [0.9, 0.3, 0.05],
   glowColor = [0.9, 0.4, 0.1],
@@ -38,11 +40,18 @@ export function Globe({
   const isDraggingRef = useRef(false);
   const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
   const velocityRef = useRef({ phi: 0, theta: 0 });
+  const dragDistRef = useRef(0);
 
   // Pinch-to-zoom tracking
   const pinchRef = useRef<{ id0: number; id1: number; dist: number } | null>(
     null,
   );
+
+  // Keep callback in a ref so the stale-closure inside useEffect always sees
+  // the latest version without needing to re-run the effect.
+  const onMarkerClickRef = useRef(onMarkerClick);
+  onMarkerClickRef.current = onMarkerClick;
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -125,6 +134,7 @@ animationId = requestAnimationFrame(animate);
       }
       if (pinchRef.current) return;
       isDraggingRef.current = true;
+      dragDistRef.current = 0;
       velocityRef.current = { phi: 0, theta: 0 };
       lastPointerRef.current = { x: e.clientX, y: e.clientY };
       canvas!.setPointerCapture(e.pointerId);
@@ -151,6 +161,7 @@ animationId = requestAnimationFrame(animate);
       if (!isDraggingRef.current || !lastPointerRef.current) return;
       const dx = e.clientX - lastPointerRef.current.x;
       const dy = e.clientY - lastPointerRef.current.y;
+      dragDistRef.current += Math.hypot(dx, dy);
       // Normalize by cached CSS size so drag speed is display-size-independent
       const dPhi = (dx / cssSize) * Math.PI * 1.5;
       const dTheta = (dy / cssSize) * Math.PI;
@@ -163,8 +174,43 @@ animationId = requestAnimationFrame(animate);
     function onPointerUp(e: PointerEvent) {
       activePointers.delete(e.pointerId);
       if (activePointers.size < 2) pinchRef.current = null;
+
+      const wasClick =
+        isDraggingRef.current &&
+        dragDistRef.current < 8 &&
+        pinchRef.current === null;
+
       isDraggingRef.current = false;
       lastPointerRef.current = null;
+
+      if (wasClick && onMarkerClickRef.current) {
+        // COBE creates a 1px div per marker inside its wrapper with
+        // `anchor-name: --cobe-{id}` set as an inline style. Find the
+        // closest one within the hit radius and fire the callback.
+        const wrapper = canvas?.parentElement;
+        if (wrapper) {
+          const HIT_RADIUS = 24;
+          let closestId: string | null = null;
+          let closestDist = Infinity;
+
+          wrapper.querySelectorAll<HTMLDivElement>("div").forEach((div) => {
+            const anchorName = div.style.getPropertyValue("anchor-name");
+            if (!anchorName.startsWith("--cobe-")) return;
+            const id = anchorName.slice("--cobe-".length);
+            const rect = div.getBoundingClientRect();
+            const dist = Math.hypot(
+              e.clientX - rect.left,
+              e.clientY - rect.top,
+            );
+            if (dist < HIT_RADIUS && dist < closestDist) {
+              closestDist = dist;
+              closestId = id;
+            }
+          });
+
+          if (closestId !== null) onMarkerClickRef.current(closestId);
+        }
+      }
     }
 
     // --- Scroll-wheel zoom ---
