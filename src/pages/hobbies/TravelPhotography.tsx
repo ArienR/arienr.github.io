@@ -1,8 +1,6 @@
-import { useState, useCallback } from "react";
-import { Globe } from "@/components/globe/globe";
+import { useState, useCallback, useEffect, type CSSProperties } from "react";
 import photosData from "@/data/photos.json";
 import type { LocationWithCount, Photo, PhotosData } from "@/data/photos.types";
-import type { Marker } from "cobe";
 import {
   Sheet,
   SheetClose,
@@ -21,10 +19,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { IconX } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
-import { useEffect, CSSProperties } from "react";
+import { useGlobeContext } from "@/contexts/GlobeContext";
 
 export default function TravelPhotography() {
   const { locations, photos } = photosData as unknown as PhotosData;
+  const { setMode, setOnMarkerClick } = useGlobeContext();
+
+  const [markersVisible, setMarkersVisible] = useState(false);
 
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
     null,
@@ -43,12 +44,6 @@ export default function TravelPhotography() {
     photoCount: photoCounts[loc.id] ?? 0,
   }));
 
-  const markers: Marker[] = locationsWithCounts.map(({ lat, lng, id }) => ({
-    location: [lat, lng] as [number, number],
-    size: 0.05,
-    id,
-  }));
-
   const selectedLocation = locationsWithCounts.find(
     (l) => l.id === selectedLocationId,
   );
@@ -60,6 +55,18 @@ export default function TravelPhotography() {
     setSelectedLocationId(id);
     setCarouselOpen(false);
   }, []);
+
+  // Register with the shared Globe and restore mini mode on unmount
+  useEffect(() => {
+    setMode("full");
+    setOnMarkerClick(handleMarkerClick);
+    const t = setTimeout(() => setMarkersVisible(true), 300);
+    return () => {
+      clearTimeout(t);
+      setMode("mini");
+      setOnMarkerClick(undefined);
+    };
+  }, [setMode, setOnMarkerClick, handleMarkerClick]);
 
   const handleThumbnailClick = (index: number) => {
     setCarouselStartIndex(index);
@@ -75,8 +82,6 @@ export default function TravelPhotography() {
 
   return (
     <>
-      <Globe markers={markers} onMarkerClick={handleMarkerClick} />
-
       {/* Marker badges */}
       {locationsWithCounts.map((loc) => {
         const countLabel =
@@ -92,7 +97,7 @@ export default function TravelPhotography() {
                 left: "anchor(center)",
                 translate: "-50% -20%",
                 marginBottom: "10px",
-                opacity: `var(--cobe-visible-${loc.id}, 0)`,
+                opacity: markersVisible ? `var(--cobe-visible-${loc.id}, 0)` : 0,
                 transition: "opacity 0.2s ease",
               } as CSSProperties
             }

@@ -1,5 +1,5 @@
 import createGlobe, { type COBEOptions, type Marker } from "cobe";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 
 const SCALE_MIN = 0.2;
 const SCALE_MAX = 2;
@@ -7,6 +7,10 @@ const SCALE_MAX = 2;
 type GlobeProps = {
   markers?: Marker[];
   onMarkerClick?: (id: string) => void;
+  contained?: boolean;
+  initialScale?: number;
+  interactive?: boolean;
+  wrapperStyle?: CSSProperties;
 } & Partial<
   Pick<
     COBEOptions,
@@ -23,6 +27,10 @@ type GlobeProps = {
 export function Globe({
   markers = [],
   onMarkerClick,
+  contained = false,
+  initialScale = 0.65,
+  interactive = true,
+  wrapperStyle,
   baseColor = [0.8, 0.35, 0.08],
   markerColor = [0.9, 0.3, 0.05],
   glowColor = [0.9, 0.4, 0.1],
@@ -36,7 +44,7 @@ export function Globe({
   // All mutable state in refs — no re-renders needed
   const phiRef = useRef(0);
   const thetaRef = useRef(initialTheta);
-  const scaleRef = useRef(0.65);
+  const scaleRef = useRef(initialScale);
   const isDraggingRef = useRef(false);
   const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
   const velocityRef = useRef({ phi: 0, theta: 0 });
@@ -64,7 +72,7 @@ export function Globe({
     // fixed BUFFER here instead of the real CSS size, anchor divs are placed
     // in a smaller coordinate space than the displayed canvas, shifting all
     // tooltips to the wrong position.
-    let cssSize = canvas.getBoundingClientRect().width;
+    let cssSize = canvas.offsetWidth;
 
     const globe = createGlobe(canvas, {
       devicePixelRatio: dpr,
@@ -109,7 +117,7 @@ animationId = requestAnimationFrame(animate);
     animate();
 
     const ro = new ResizeObserver(() => {
-      cssSize = canvas!.getBoundingClientRect().width;
+      cssSize = canvas!.offsetWidth;
       globe.update({ width: cssSize * dpr, height: cssSize * dpr });
     });
     ro.observe(canvas);
@@ -230,21 +238,25 @@ animationId = requestAnimationFrame(animate);
       );
     }
 
-    canvas.addEventListener("pointerdown", onPointerDown);
-    canvas.addEventListener("pointermove", onPointerMove);
-    canvas.addEventListener("pointerup", onPointerUp);
-    canvas.addEventListener("pointercancel", onPointerUp);
-    canvas.addEventListener("wheel", onWheel, { passive: false });
+    if (interactive && !contained) {
+      canvas.addEventListener("pointerdown", onPointerDown);
+      canvas.addEventListener("pointermove", onPointerMove);
+      canvas.addEventListener("pointerup", onPointerUp);
+      canvas.addEventListener("pointercancel", onPointerUp);
+      canvas.addEventListener("wheel", onWheel, { passive: false });
+    }
 
     return () => {
       cancelAnimationFrame(animationId);
       globe.destroy();
       ro.disconnect();
-      canvas.removeEventListener("pointerdown", onPointerDown);
-      canvas.removeEventListener("pointermove", onPointerMove);
-      canvas.removeEventListener("pointerup", onPointerUp);
-      canvas.removeEventListener("pointercancel", onPointerUp);
-      canvas.removeEventListener("wheel", onWheel);
+      if (interactive && !contained) {
+        canvas.removeEventListener("pointerdown", onPointerDown);
+        canvas.removeEventListener("pointermove", onPointerMove);
+        canvas.removeEventListener("pointerup", onPointerUp);
+        canvas.removeEventListener("pointercancel", onPointerUp);
+        canvas.removeEventListener("wheel", onWheel);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -256,11 +268,28 @@ animationId = requestAnimationFrame(animate);
   // collapses to 0×0 — breaking anchor div placement. By making the canvas
   // `absolute` inside our fixed square div, the COBE wrapper inherits the
   // correct max(vw,vh)×max(vw,vh) dimensions and anchor divs land in the right place.
-  return (
-    <div className="fixed top-[calc(50vh-max(50vw,50vh))] left-[calc(50vw-max(50vw,50vh))] w-[max(100vw,100vh)] h-[max(100vw,100vh)] pointer-events-none">
+  if (contained) {
+    return (
       <canvas
         ref={canvasRef}
-        className="cursor-grab active:cursor-grabbing absolute inset-0 w-full h-full pointer-events-auto"
+        className="absolute inset-0 w-full h-full"
+        style={{ contain: "layout paint size" }}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="fixed top-[calc(50vh-max(50vw,50vh))] left-[calc(50vw-max(50vw,50vh))] w-[max(100vw,100vh)] h-[max(100vw,100vh)] pointer-events-none"
+      style={wrapperStyle}
+    >
+      <canvas
+        ref={canvasRef}
+        className={
+          interactive
+            ? "cursor-grab active:cursor-grabbing absolute inset-0 w-full h-full pointer-events-auto"
+            : "absolute inset-0 w-full h-full pointer-events-none"
+        }
         style={{ contain: "layout paint size" }}
       />
     </div>
