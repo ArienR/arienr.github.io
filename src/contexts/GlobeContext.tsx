@@ -19,6 +19,7 @@ type GlobeContextValue = {
   mode: GlobeMode;
   wrapperStyle: CSSProperties;
   interactive: boolean;
+  isGlobeTransitioning: boolean;
   onMarkerClick: ((id: string) => void) | undefined;
   setMode: (mode: GlobeMode) => void;
   setOnMarkerClick: (cb: ((id: string) => void) | undefined) => void;
@@ -41,28 +42,26 @@ type GlobeContextValue = {
 // Simplifying target_vx - left_w = (vw - MARGIN - RADIUS) - (vw-size)/2:
 //   ox = (vw/2 - MARGIN - 2*RADIUS + size/2) / (1 - S)
 // ---------------------------------------------------------------------------
-const MARGIN = 16; // 1rem in px
-const RADIUS = 128; // 8rem in px — visual circle radius (was 64)
+export const MINI_MARGIN = 16; // px — matches right-4 / bottom-4 on the click target
+export const MINI_RADIUS = 160; // px — matches w-80/2 on the click target
+export const GLOBE_TRANSITION_DURATION = 450;
 
 function computeMiniTransform(): MiniTransform {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const size = Math.max(vw, vh);
-  const S = (RADIUS * 2) / size;
-  const ox = (vw / 2 - MARGIN - 2 * RADIUS + size / 2) / (1 - S);
-  const oy = (vh / 2 - MARGIN - 2 * RADIUS + size / 2) / (1 - S);
+  const S = (MINI_RADIUS * 2) / size;
+  const ox = (vw / 2 - MINI_MARGIN - 2 * MINI_RADIUS + size / 2) / (1 - S);
+  const oy = (vh / 2 - MINI_MARGIN - 2 * MINI_RADIUS + size / 2) / (1 - S);
   return { S, ox, oy };
 }
 
-function buildWrapperStyle(
-  mode: GlobeMode,
-  t: MiniTransform,
-): CSSProperties {
+function buildWrapperStyle(mode: GlobeMode, t: MiniTransform): CSSProperties {
   const shared: CSSProperties = {
     transformOrigin: `${t.ox}px ${t.oy}px`,
     overflow: "hidden",
     transition:
-      "transform 900ms cubic-bezier(0.35, 0, 0.1, 1), border-radius 600ms cubic-bezier(0.4, 0, 0.2, 1)",
+      "transform 900ms cubic-bezier(0.35, 0, 0.1, 1), border-radius 600ms 900ms cubic-bezier(0.35, 0, 0.1, 1)",
     pointerEvents: "none",
   };
   if (mode === "mini") {
@@ -94,9 +93,8 @@ export function GlobeProvider({ children }: { children: ReactNode }) {
   >(undefined);
 
   // Recompute mini transform on mount and resize
-  const [miniTransform, setMiniTransform] = useState<MiniTransform>(
-    computeMiniTransform,
-  );
+  const [miniTransform, setMiniTransform] =
+    useState<MiniTransform>(computeMiniTransform);
 
   useEffect(() => {
     function handleResize() {
@@ -110,6 +108,20 @@ export function GlobeProvider({ children }: { children: ReactNode }) {
     () => buildWrapperStyle(mode, miniTransform),
     [mode, miniTransform],
   );
+
+  // Track mode transitions so pages can fade in/out in sync with the globe.
+  const [isGlobeTransitioning, setIsGlobeTransitioning] = useState(false);
+  const prevModeRef = useRef(mode);
+  useEffect(() => {
+    if (prevModeRef.current === mode) return;
+    prevModeRef.current = mode;
+    setIsGlobeTransitioning(true);
+    const t = setTimeout(
+      () => setIsGlobeTransitioning(false),
+      GLOBE_TRANSITION_DURATION,
+    );
+    return () => clearTimeout(t);
+  }, [mode]);
 
   // Prevent React from treating the callback as state (avoids wrapping in array)
   const setOnMarkerClick = useCallback(
@@ -129,11 +141,19 @@ export function GlobeProvider({ children }: { children: ReactNode }) {
       mode,
       wrapperStyle,
       interactive: mode === "full",
+      isGlobeTransitioning,
       onMarkerClick,
       setMode,
       setOnMarkerClick,
     }),
-    [mode, wrapperStyle, onMarkerClick, setMode, setOnMarkerClick],
+    [
+      mode,
+      wrapperStyle,
+      isGlobeTransitioning,
+      onMarkerClick,
+      setMode,
+      setOnMarkerClick,
+    ],
   );
 
   return (
@@ -143,6 +163,7 @@ export function GlobeProvider({ children }: { children: ReactNode }) {
 
 export function useGlobeContext(): GlobeContextValue {
   const ctx = useContext(GlobeContext);
-  if (!ctx) throw new Error("useGlobeContext must be used inside GlobeProvider");
+  if (!ctx)
+    throw new Error("useGlobeContext must be used inside GlobeProvider");
   return ctx;
 }

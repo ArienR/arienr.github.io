@@ -1,4 +1,11 @@
-import { useState, useCallback, useEffect, type CSSProperties } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  type CSSProperties,
+} from "react";
+import { useNavigate } from "react-router-dom";
 import photosData from "@/data/photos.json";
 import type { LocationWithCount, Photo, PhotosData } from "@/data/photos.types";
 import {
@@ -17,14 +24,21 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
-import { IconX } from "@tabler/icons-react";
+import { IconArrowLeft, IconX } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
-import { useGlobeContext } from "@/contexts/GlobeContext";
+import {
+  useGlobeContext,
+  GLOBE_TRANSITION_DURATION,
+} from "@/contexts/GlobeContext";
 
 export default function TravelPhotography() {
   const { locations, photos } = photosData as unknown as PhotosData;
-  const { setMode, setOnMarkerClick } = useGlobeContext();
+  const { mode, setMode, setOnMarkerClick } = useGlobeContext();
+  const navigate = useNavigate();
 
+  // Capture mode at mount: if already "full" the globe is done expanding;
+  // if "mini" it will start a GLOBE_TRANSITION_DURATION ms CSS transition.
+  const initialModeRef = useRef(mode);
   const [markersVisible, setMarkersVisible] = useState(false);
 
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
@@ -56,11 +70,15 @@ export default function TravelPhotography() {
     setCarouselOpen(false);
   }, []);
 
-  // Register with the shared Globe and restore mini mode on unmount
+  // Register with the shared Globe and restore mini mode on unmount.
+  // If the globe was already in full mode (navigated via the globe click),
+  // use a short settle delay. If it was mini, wait for the CSS transition.
   useEffect(() => {
     setMode("full");
     setOnMarkerClick(handleMarkerClick);
-    const t = setTimeout(() => setMarkersVisible(true), 300);
+    const delay =
+      initialModeRef.current === "full" ? 300 : GLOBE_TRANSITION_DURATION + 50;
+    const t = setTimeout(() => setMarkersVisible(true), delay);
     return () => {
       clearTimeout(t);
       setMode("mini");
@@ -82,6 +100,20 @@ export default function TravelPhotography() {
 
   return (
     <>
+      {/* Back button — shrinks globe first, then navigates */}
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="fixed top-4 left-4 z-[45] text-foreground/70 hover:text-foreground"
+        onClick={() => {
+          setMode("mini");
+          setTimeout(() => navigate(-1), GLOBE_TRANSITION_DURATION);
+        }}
+      >
+        <IconArrowLeft />
+        <span className="sr-only">Back</span>
+      </Button>
+
       {/* Marker badges */}
       {locationsWithCounts.map((loc) => {
         const countLabel =
@@ -97,7 +129,9 @@ export default function TravelPhotography() {
                 left: "anchor(center)",
                 translate: "-50% -20%",
                 marginBottom: "10px",
-                opacity: markersVisible ? `var(--cobe-visible-${loc.id}, 0)` : 0,
+                opacity: markersVisible
+                  ? `var(--cobe-visible-${loc.id}, 0)`
+                  : 0,
                 transition: "opacity 0.2s ease",
               } as CSSProperties
             }

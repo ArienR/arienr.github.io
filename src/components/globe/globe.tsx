@@ -65,6 +65,8 @@ export function Globe({
     if (!canvas) return;
 
     const dpr = window.devicePixelRatio || 2;
+    // Faster auto-rotation when not interactive (mini mode)
+    const AUTO_ROTATION = interactive ? 0.002 : 0.008;
     let animationId: number;
 
     // Use the actual CSS canvas size so COBE positions anchor divs correctly.
@@ -101,7 +103,7 @@ export function Globe({
       if (!isDraggingRef.current) {
         velocityRef.current.phi *= 0.95;
         velocityRef.current.theta *= 0.95;
-        phiRef.current += velocityRef.current.phi + 0.003;
+        phiRef.current += velocityRef.current.phi + AUTO_ROTATION;
         thetaRef.current = clampTheta(
           thetaRef.current + velocityRef.current.theta,
         );
@@ -258,8 +260,7 @@ animationId = requestAnimationFrame(animate);
         canvas.removeEventListener("wheel", onWheel);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [interactive]);
 
   // The wrapper must be a fixed, square div matching the canvas CSS dimensions.
   // COBE injects its own relative wrapper (width:100%;height:100%) around the
