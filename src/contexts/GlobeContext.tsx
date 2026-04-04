@@ -28,21 +28,25 @@ type GlobeContextValue = {
 // ---------------------------------------------------------------------------
 // Compute the transform-origin (in Globe-wrapper local px coordinates) and
 // scale factor so that scale(S) keeps the sphere's visual center pinned at
-// (vw - MARGIN - RADIUS, vh - MARGIN - RADIUS) in viewport space.
+// (vw - CORNER_OFFSET, vh - CORNER_OFFSET) in viewport space.
+//
+// MINI_CORNER_OFFSET is the distance from the bottom-right corner to the
+// globe's visual centre. Values below MINI_RADIUS mean the globe is partially
+// clipped by the screen edge (intentional — the globe peeks out of the corner).
 //
 // The Globe wrapper is max(vw,vh) × max(vw,vh), centered in the viewport:
 //   left_w = (vw - size) / 2    (negative when portrait)
 //   top_w  = (vh - size) / 2    (negative when landscape)
 //
 // For scale(S) with transform-origin (ox, oy) to fix the sphere center at
-// target = (vw - MARGIN - RADIUS, vh - MARGIN - RADIUS):
+// target = (vw - CORNER_OFFSET, vh - CORNER_OFFSET):
 //
 //   target_vx = left_w + ox + S * (size/2 - ox)   →   ox = (target_vx - left_w - S*size/2) / (1 - S)
 //
-// Simplifying target_vx - left_w = (vw - MARGIN - RADIUS) - (vw-size)/2:
-//   ox = (vw/2 - MARGIN - 2*RADIUS + size/2) / (1 - S)
+// Substituting target_vx - left_w = (vw - CORNER_OFFSET) - (vw-size)/2 and S*size/2 = RADIUS:
+//   ox = (vw/2 + size/2 - CORNER_OFFSET - RADIUS) / (1 - S)
 // ---------------------------------------------------------------------------
-export const MINI_MARGIN = 16; // px — matches right-4 / bottom-4 on the click target
+export const MINI_CORNER_OFFSET = 140; // px — distance from corner to globe centre
 export const MINI_RADIUS = 160; // px — matches w-80/2 on the click target
 export const GLOBE_TRANSITION_DURATION = 450;
 
@@ -51,8 +55,8 @@ function computeMiniTransform(): MiniTransform {
   const vh = window.innerHeight;
   const size = Math.max(vw, vh);
   const S = (MINI_RADIUS * 2) / size;
-  const ox = (vw / 2 - MINI_MARGIN - 2 * MINI_RADIUS + size / 2) / (1 - S);
-  const oy = (vh / 2 - MINI_MARGIN - 2 * MINI_RADIUS + size / 2) / (1 - S);
+  const ox = (vw / 2 + size / 2 - MINI_CORNER_OFFSET - MINI_RADIUS) / (1 - S);
+  const oy = (vh / 2 + size / 2 - MINI_CORNER_OFFSET - MINI_RADIUS) / (1 - S);
   return { S, ox, oy };
 }
 

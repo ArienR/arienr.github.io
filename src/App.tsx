@@ -15,7 +15,7 @@ import TravelPhotography from "@/pages/hobbies/TravelPhotography.tsx";
 import {
   GlobeProvider,
   useGlobeContext,
-  MINI_MARGIN,
+  MINI_CORNER_OFFSET,
   MINI_RADIUS,
   GLOBE_TRANSITION_DURATION,
 } from "@/contexts/GlobeContext";
@@ -27,8 +27,14 @@ import { cn } from "@/lib/utils";
 function GlobeOrchestrator() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { mode, wrapperStyle, interactive, onMarkerClick, setMode, isGlobeTransitioning } =
-    useGlobeContext();
+  const {
+    mode,
+    wrapperStyle,
+    interactive,
+    onMarkerClick,
+    setMode,
+    isGlobeTransitioning,
+  } = useGlobeContext();
   const { locations } = photosData as unknown as PhotosData;
   const markers = locations.map(({ lat, lng, id }) => ({
     location: [lat, lng] as [number, number],
@@ -50,7 +56,10 @@ function GlobeOrchestrator() {
   function handleMiniGlobeClick() {
     if (isGlobeTransitioning) return;
     setMode("full");
-    setTimeout(() => navigate("/travel-photography"), GLOBE_TRANSITION_DURATION);
+    setTimeout(
+      () => navigate("/travel-photography"),
+      GLOBE_TRANSITION_DURATION,
+    );
   }
 
   return (
@@ -69,8 +78,8 @@ function GlobeOrchestrator() {
           badgeVisible ? "opacity-100" : "opacity-0",
         )}
         style={{
-          bottom: MINI_MARGIN + MINI_RADIUS + 100,
-          right: MINI_MARGIN + MINI_RADIUS,
+          bottom: MINI_CORNER_OFFSET + 100,
+          right: MINI_CORNER_OFFSET,
           translate: "50% 0",
         }}
       >
@@ -82,7 +91,8 @@ function GlobeOrchestrator() {
       {/* Click target — visible on any page where the globe is mini */}
       {mode === "mini" && pathname !== "/travel-photography" && (
         <div
-          className="fixed bottom-4 right-4 w-80 h-80 rounded-full z-[60] cursor-pointer"
+          className="fixed w-80 h-80 rounded-full z-[60] cursor-pointer"
+          style={{ bottom: MINI_CORNER_OFFSET - MINI_RADIUS, right: MINI_CORNER_OFFSET - MINI_RADIUS }}
           onClick={handleMiniGlobeClick}
         />
       )}
