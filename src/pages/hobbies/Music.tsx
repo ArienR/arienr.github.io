@@ -2,6 +2,33 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 const WORKER_URL = "https://spotify-worker.arien-spotify-worker.workers.dev";
+const CACHE_KEY = "spotify_data";
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+type CachedEntry = { data: SpotifyData; cachedAt: number };
+
+function readCache(): SpotifyData | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { data, cachedAt } = JSON.parse(raw) as CachedEntry;
+    if (Date.now() - cachedAt > CACHE_TTL_MS) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(data: SpotifyData) {
+  try {
+    localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({ data, cachedAt: Date.now() }),
+    );
+  } catch {
+    // localStorage unavailable (private browsing, quota exceeded) — skip silently
+  }
+}
 
 type SpotifyImage = {
   url: string;
@@ -42,12 +69,21 @@ export default function Music() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const cached = readCache();
+    if (cached) {
+      setData(cached);
+      return;
+    }
+
     fetch(WORKER_URL)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch");
         return res.json() as Promise<SpotifyData>;
       })
-      .then(setData)
+      .then((fresh) => {
+        writeCache(fresh);
+        setData(fresh);
+      })
       .catch(() => setError("Failed to load Spotify data."));
   }, []);
 
