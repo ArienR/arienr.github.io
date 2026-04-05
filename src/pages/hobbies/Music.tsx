@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-const WORKER_URL = "https://spotify-worker.arien-spotify-worker.workers.dev";
+const WORKER_URL = "https://media-api.arien.workers.dev/spotify";
 const CACHE_KEY = "spotify_data";
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
