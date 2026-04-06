@@ -16,14 +16,30 @@ export default function Home() {
   }, [setMode]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-      <section className="container w-3xl text-left">
+    <div className="min-h-screen flex flex-col items-center justify-center md:pb-[160px]">
+      <section className="container max-w-3xl px-4 sm:px-8 text-left">
         <h1 className="font-bold text-6xl mb-6 pointer-events-none">
           I'm Arien
         </h1>
         <TooltipProvider>
           <div id="home-description">
             <span>Software engineer — I love </span>
+            <Tooltip key="coding">
+              <TooltipTrigger asChild>
+                <a
+                  href="https://github.com/arienr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-chart-3 underline"
+                >
+                  coding
+                </a>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>What have I been coding?</p>
+              </TooltipContent>
+            </Tooltip>
+            <span>, </span>
             <Tooltip key="music">
               <TooltipTrigger asChild>
                 <Link to="/music" className="text-chart-3 underline">

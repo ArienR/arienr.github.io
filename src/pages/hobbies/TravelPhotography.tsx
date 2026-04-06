@@ -103,7 +103,7 @@ export default function TravelPhotography() {
       {/* Back button — shrinks globe first, then navigates */}
       <Button
         variant="ghost"
-        size="icon-sm"
+        size="sm"
         className="fixed top-4 left-4 z-[45] text-foreground/70 hover:text-foreground"
         onClick={() => {
           setMode("mini");
@@ -111,7 +111,7 @@ export default function TravelPhotography() {
         }}
       >
         <IconArrowLeft />
-        <span className="sr-only">Back</span>
+        Back
       </Button>
 
       {/* Marker badges */}

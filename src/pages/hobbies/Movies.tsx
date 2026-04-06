@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { IconArrowLeft } from "@tabler/icons-react";
 
 const WORKER_URL = "https://media-api.arien.workers.dev/letterboxd";
 const CACHE_KEY = "letterboxd_data";
@@ -53,6 +55,7 @@ function toStars(rating: string): string {
 }
 
 export default function Movies() {
+  const navigate = useNavigate();
   const [data, setData] = useState<LetterboxdData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,7 +81,16 @@ export default function Movies() {
   const movies = data?.entries.slice(0, 4) ?? [];
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-16">
+    <div className="min-h-screen flex items-center justify-center py-16 md:pb-[160px]">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="fixed top-4 left-4 z-[45] text-foreground/70 hover:text-foreground"
+        onClick={() => navigate(-1)}
+      >
+        <IconArrowLeft />
+        Back
+      </Button>
       <section className="container max-w-5xl text-left">
         <h1 className="font-bold text-4xl mb-2">Movies</h1>
         <p className="text-muted-foreground mb-8">What have I been watching?</p>
@@ -121,10 +133,7 @@ export default function Movies() {
           </div>
         )}
 
-        <div className="mt-8 flex items-center gap-4">
-          <Link to="/" className="underline">
-            Back
-          </Link>
+        <div className="mt-8">
           <a
             href="https://letterboxd.com/arienr/"
             target="_blank"

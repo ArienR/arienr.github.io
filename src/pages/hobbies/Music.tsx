@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { IconArrowLeft } from "@tabler/icons-react";
 
 const WORKER_URL = "https://media-api.arien.workers.dev/spotify";
 const CACHE_KEY = "spotify_data";
@@ -65,6 +67,7 @@ type SpotifyData = {
 };
 
 export default function Music() {
+  const navigate = useNavigate();
   const [data, setData] = useState<SpotifyData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,7 +91,16 @@ export default function Music() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-16">
+    <div className="min-h-screen flex items-center justify-center py-16 md:pb-[160px]">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="fixed top-4 left-4 z-[45] text-foreground/70 hover:text-foreground"
+        onClick={() => navigate(-1)}
+      >
+        <IconArrowLeft />
+        Back
+      </Button>
       <section className="container max-w-5xl text-left">
         <h1 className="font-bold text-4xl mb-2">Music</h1>
         <p className="text-muted-foreground mb-8">
@@ -164,11 +176,6 @@ export default function Music() {
           </div>
         )}
 
-        <div className="mt-8">
-          <Link to="/" className="underline">
-            Back
-          </Link>
-        </div>
       </section>
     </div>
   );

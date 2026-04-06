@@ -69,11 +69,12 @@ function GlobeOrchestrator() {
         onMarkerClick={onMarkerClick}
         interactive={interactive}
         wrapperStyle={wrapperStyle}
+        className={mode === "mini" ? "hidden md:block" : undefined}
       />
       {/* "Click me" badge above the mini globe — mirrors the location badges in TravelPhotography */}
       <div
         className={cn(
-          "fixed flex flex-col items-center pointer-events-none z-[60]",
+          "fixed hidden md:flex flex-col items-center pointer-events-none z-[60]",
           "transition-opacity duration-300",
           badgeVisible ? "opacity-100" : "opacity-0",
         )}
@@ -91,7 +92,7 @@ function GlobeOrchestrator() {
       {/* Click target — visible on any page where the globe is mini */}
       {mode === "mini" && pathname !== "/travel-photography" && (
         <div
-          className="fixed w-80 h-80 rounded-full z-[60] cursor-pointer"
+          className="fixed hidden md:block w-80 h-80 rounded-full z-[60] cursor-pointer"
           style={{ bottom: MINI_CORNER_OFFSET - MINI_RADIUS, right: MINI_CORNER_OFFSET - MINI_RADIUS }}
           onClick={handleMiniGlobeClick}
         />

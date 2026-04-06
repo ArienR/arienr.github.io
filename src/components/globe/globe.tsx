@@ -1,5 +1,6 @@
 import createGlobe, { type COBEOptions, type Marker } from "cobe";
 import { useEffect, useRef, type CSSProperties } from "react";
+import { cn } from "@/lib/utils";
 
 const SCALE_MIN = 0.2;
 const SCALE_MAX = 2;
@@ -11,6 +12,7 @@ type GlobeProps = {
   initialScale?: number;
   interactive?: boolean;
   wrapperStyle?: CSSProperties;
+  className?: string;
 } & Partial<
   Pick<
     COBEOptions,
@@ -31,6 +33,7 @@ export function Globe({
   initialScale = 0.65,
   interactive = true,
   wrapperStyle,
+  className,
   baseColor = [0.8, 0.35, 0.08],
   markerColor = [0.9, 0.3, 0.05],
   glowColor = [0.9, 0.4, 0.1],
@@ -281,7 +284,10 @@ animationId = requestAnimationFrame(animate);
 
   return (
     <div
-      className="fixed top-[calc(50vh-max(50vw,50vh))] left-[calc(50vw-max(50vw,50vh))] w-[max(100vw,100vh)] h-[max(100vw,100vh)] pointer-events-none"
+      className={cn(
+        "fixed top-[calc(50vh-max(50vw,50vh))] left-[calc(50vw-max(50vw,50vh))] w-[max(100vw,100vh)] h-[max(100vw,100vh)] pointer-events-none",
+        className,
+      )}
       style={wrapperStyle}
     >
       <canvas
