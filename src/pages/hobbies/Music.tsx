@@ -91,11 +91,11 @@ export default function Music() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-16 md:pb-[160px]">
+    <div className="min-h-screen flex items-center justify-center py-16">
       <Button
         variant="ghost"
         size="sm"
-        className="fixed top-4 left-4 z-[45] text-foreground/70 hover:text-foreground"
+        className="fixed top-4 left-4 lg:left-[calc(20%+1rem)] z-[45] text-foreground/70 hover:text-foreground"
         onClick={() => navigate(-1)}
       >
         <IconArrowLeft />

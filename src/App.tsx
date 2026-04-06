@@ -24,6 +24,20 @@ import photosData from "@/data/photos.json";
 import type { PhotosData } from "@/data/photos.types";
 import { cn } from "@/lib/utils";
 
+/** Returns true when the viewport is at least the lg breakpoint (1024px). */
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= 1024,
+  );
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const handler = () => setIsDesktop(mql.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+  return isDesktop;
+}
+
 function GlobeOrchestrator() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -69,12 +83,12 @@ function GlobeOrchestrator() {
         onMarkerClick={onMarkerClick}
         interactive={interactive}
         wrapperStyle={wrapperStyle}
-        className={mode === "mini" ? "hidden md:block" : undefined}
+        className={mode === "mini" ? "hidden lg:block" : undefined}
       />
-      {/* "Click me" badge above the mini globe — mirrors the location badges in TravelPhotography */}
+      {/* "Click me" badge above the mini globe */}
       <div
         className={cn(
-          "fixed hidden md:flex flex-col items-center pointer-events-none z-[60]",
+          "fixed hidden lg:flex flex-col items-center pointer-events-none z-[60]",
           "transition-opacity duration-300",
           badgeVisible ? "opacity-100" : "opacity-0",
         )}
@@ -92,12 +106,39 @@ function GlobeOrchestrator() {
       {/* Click target — visible on any page where the globe is mini */}
       {mode === "mini" && pathname !== "/travel-photography" && (
         <div
-          className="fixed hidden md:block w-80 h-80 rounded-full z-[60] cursor-pointer"
-          style={{ bottom: MINI_CORNER_OFFSET - MINI_RADIUS, right: MINI_CORNER_OFFSET - MINI_RADIUS }}
+          className="fixed hidden lg:block w-80 h-80 rounded-full z-[60] cursor-pointer"
+          style={{
+            bottom: MINI_CORNER_OFFSET - MINI_RADIUS,
+            right: MINI_CORNER_OFFSET - MINI_RADIUS,
+          }}
           onClick={handleMiniGlobeClick}
         />
       )}
     </>
+  );
+}
+
+/**
+ * Decorative globe shown below page content on small screens (<lg).
+ * Clicking it navigates to the Travel Photography page.
+ * Not shown on the Travel Photography page itself (globe already covers the screen there).
+ */
+function MobileGlobeSection() {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const isDesktop = useIsDesktop();
+
+  if (isDesktop || pathname === "/travel-photography") return null;
+
+  return (
+    <div className="flex justify-center">
+      <div
+        className="relative w-64 h-64 rounded-full overflow-hidden cursor-pointer"
+        onClick={() => navigate("/travel-photography")}
+      >
+        <Globe contained interactive={false} />
+      </div>
+    </div>
   );
 }
 
@@ -117,6 +158,7 @@ function AppContent() {
         <Route path="/movies" element={<Movies />} />
         <Route path="/travel-photography" element={<TravelPhotography />} />
       </Routes>
+      <MobileGlobeSection />
     </div>
   );
 }
@@ -126,7 +168,11 @@ function App() {
     <BrowserRouter>
       <GlobeProvider>
         <GlobeOrchestrator />
-        <AppContent />
+        {/* Center content in the middle 60% on desktop (1/5 left, 3/5 center, 1/5 right).
+            The right 1/5 is where the mini globe naturally sits (140px from corner). */}
+        <div className="lg:mx-[20%]">
+          <AppContent />
+        </div>
       </GlobeProvider>
     </BrowserRouter>
   );

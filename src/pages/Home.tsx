@@ -16,7 +16,7 @@ export default function Home() {
   }, [setMode]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center md:pb-[160px]">
+    <div className="min-h-screen flex flex-col items-center justify-center">
       <section className="container max-w-3xl px-4 sm:px-8 text-left">
         <h1 className="font-bold text-6xl mb-6 pointer-events-none">
           I'm Arien
