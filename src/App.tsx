@@ -6,7 +6,6 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
-import "./App.css";
 
 import Home from "@/pages/Home.tsx";
 import Music from "@/pages/hobbies/Music.tsx";

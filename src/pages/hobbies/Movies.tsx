@@ -118,7 +118,6 @@ export default function Movies() {
                 </div>
                 <div className="mt-2">
                   <p className="font-medium text-sm leading-snug">
-                    {movie.title}
                     {movie.rating && (
                       <span className="text-muted-foreground">
                         {" "}
@@ -126,6 +125,7 @@ export default function Movies() {
                       </span>
                     )}
                   </p>
+                  <p className="text-sm">{movie.title}</p>
                   <p className="text-xs text-muted-foreground">{movie.year}</p>
                 </div>
               </a>
