@@ -2,81 +2,31 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft } from "@tabler/icons-react";
-
-const WORKER_URL = "https://media-api.arien.workers.dev/letterboxd";
-const CACHE_KEY = "letterboxd_data";
-const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
-
-type MovieEntry = {
-  title: string;
-  year: string;
-  rating: string;
-  watchedDate: string;
-  letterboxdUrl: string;
-  poster: string;
-  tmdbId: string;
-};
-
-type LetterboxdData = {
-  entries: MovieEntry[];
-};
-
-type CachedEntry = { data: LetterboxdData; cachedAt: number };
-
-function readCache(): LetterboxdData | null {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const { data, cachedAt } = JSON.parse(raw) as CachedEntry;
-    if (Date.now() - cachedAt > CACHE_TTL_MS) return null;
-    return data;
-  } catch {
-    return null;
-  }
-}
-
-function writeCache(data: LetterboxdData) {
-  try {
-    localStorage.setItem(
-      CACHE_KEY,
-      JSON.stringify({ data, cachedAt: Date.now() }),
-    );
-  } catch {
-    // localStorage unavailable — skip silently
-  }
-}
-
-function toStars(rating: string): string {
-  const val = parseFloat(rating);
-  if (isNaN(val)) return "";
-  const full = Math.floor(val);
-  const half = val % 1 >= 0.5;
-  return "★".repeat(full) + (half ? "½" : "");
-}
+import {
+  fetchLetterboxdData,
+  readCachedLetterboxdData,
+  writeCachedLetterboxdData,
+} from "./movies/api";
+import { formatRatingStars, formatWatchedAgo } from "./movies/formatters";
+import type { LetterboxdData } from "./movies/types";
 
 export default function Movies() {
   const navigate = useNavigate();
-  const [data, setData] = useState<LetterboxdData | null>(null);
+  const [data, setData] = useState<LetterboxdData | null>(() =>
+    readCachedLetterboxdData(),
+  );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const cached = readCache();
-    if (cached) {
-      setData(cached);
-      return;
-    }
+    if (data) return;
 
-    fetch(WORKER_URL)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch");
-        return res.json() as Promise<LetterboxdData>;
-      })
+    fetchLetterboxdData()
       .then((fresh) => {
-        writeCache(fresh);
+        writeCachedLetterboxdData(fresh);
         setData(fresh);
       })
       .catch(() => setError("Failed to load Letterboxd data."));
-  }, []);
+  }, [data]);
 
   const movies = data?.entries.slice(0, 4) ?? [];
 
@@ -121,12 +71,13 @@ export default function Movies() {
                     {movie.rating && (
                       <span className="text-muted-foreground">
                         {" "}
-                        {toStars(movie.rating)}
+                        {formatRatingStars(movie.rating)}
                       </span>
                     )}
                   </p>
-                  <p className="text-sm">{movie.title}</p>
-                  <p className="text-xs text-muted-foreground">{movie.year}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatWatchedAgo(movie.watchedDate)}
+                  </p>
                 </div>
               </a>
             ))}
