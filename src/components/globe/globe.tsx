@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 
 const SCALE_MIN = 0.2;
 const SCALE_MAX = 2;
+const SCALE_RESET_DURATION = 1500;
 
 type GlobeProps = {
   markers?: Marker[];
@@ -52,6 +53,7 @@ export function Globe({
   const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
   const velocityRef = useRef({ phi: 0, theta: 0 });
   const dragDistRef = useRef(0);
+  const scaleResetAnimationRef = useRef<number | null>(null);
 
   // Pinch-to-zoom tracking
   const pinchRef = useRef<{ id0: number; id1: number; dist: number } | null>(
@@ -62,6 +64,56 @@ export function Globe({
   // the latest version without needing to re-run the effect.
   const onMarkerClickRef = useRef(onMarkerClick);
   onMarkerClickRef.current = onMarkerClick;
+
+  useEffect(() => {
+    if (scaleResetAnimationRef.current !== null) {
+      cancelAnimationFrame(scaleResetAnimationRef.current);
+      scaleResetAnimationRef.current = null;
+    }
+
+    if (interactive) return;
+
+    isDraggingRef.current = false;
+    lastPointerRef.current = null;
+    velocityRef.current = { phi: 0, theta: 0 };
+    dragDistRef.current = 0;
+    pinchRef.current = null;
+
+    const startScale = scaleRef.current;
+    const delta = initialScale - startScale;
+    if (Math.abs(delta) < 0.001) {
+      scaleRef.current = initialScale;
+      return;
+    }
+
+    let startTime: number | null = null;
+    const easeOutCubic = (t: number) =>
+      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+    function animateScaleReset(now: number) {
+      startTime ??= now;
+      const progress = Math.min((now - startTime) / SCALE_RESET_DURATION, 1);
+      scaleRef.current = startScale + delta * easeOutCubic(progress);
+
+      if (progress < 1) {
+        scaleResetAnimationRef.current =
+          requestAnimationFrame(animateScaleReset);
+        return;
+      }
+
+      scaleRef.current = initialScale;
+      scaleResetAnimationRef.current = null;
+    }
+
+    scaleResetAnimationRef.current = requestAnimationFrame(animateScaleReset);
+
+    return () => {
+      if (scaleResetAnimationRef.current !== null) {
+        cancelAnimationFrame(scaleResetAnimationRef.current);
+        scaleResetAnimationRef.current = null;
+      }
+    };
+  }, [interactive, initialScale]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -117,7 +169,7 @@ export function Globe({
         theta: thetaRef.current,
         scale: scaleRef.current,
       });
-animationId = requestAnimationFrame(animate);
+      animationId = requestAnimationFrame(animate);
     }
     animate();
 
