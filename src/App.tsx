@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   BrowserRouter,
+  NavLink,
   Routes,
   Route,
   useLocation,
@@ -8,6 +9,7 @@ import {
 } from "react-router-dom";
 
 import Home from "@/pages/Home.tsx";
+import Blog from "@/pages/Blog.tsx";
 import Music from "@/pages/hobbies/Music.tsx";
 import Movies from "@/pages/hobbies/Movies.tsx";
 import TravelPhotography from "@/pages/hobbies/TravelPhotography.tsx";
@@ -141,6 +143,42 @@ function MobileGlobeSection() {
   );
 }
 
+function SiteNav() {
+  const { mode } = useGlobeContext();
+
+  const links = [
+    { to: "/", label: "Home" },
+    { to: "/blog", label: "Blog" },
+  ];
+
+  if (mode === "full") return null;
+
+  return (
+    <nav
+      aria-label="Primary"
+      className="px-4 pt-4 lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-[20%] lg:px-16 lg:pt-16"
+    >
+      <div className="flex gap-4 lg:flex-col lg:items-start">
+        {links.map(({ to, label }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === "/"}
+            className={({ isActive }) =>
+              cn(
+                "text-sm font-medium transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background",
+                isActive ? "opacity-100" : "opacity-45",
+              )
+            }
+          >
+            {label}
+          </NavLink>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
 /** Wraps all page content so it fades in/out with globe transitions. */
 function AppContent() {
   const { isGlobeTransitioning } = useGlobeContext();
@@ -153,6 +191,7 @@ function AppContent() {
     >
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/blog" element={<Blog />} />
         <Route path="/music" element={<Music />} />
         <Route path="/movies" element={<Movies />} />
         <Route path="/travel-photography" element={<TravelPhotography />} />
@@ -167,6 +206,7 @@ function App() {
     <BrowserRouter>
       <GlobeProvider>
         <GlobeOrchestrator />
+        <SiteNav />
         {/* Center content in the middle 60% on desktop (1/5 left, 3/5 center, 1/5 right).
             The right 1/5 is where the mini globe naturally sits (140px from corner). */}
         <div className="lg:mx-[20%]">
