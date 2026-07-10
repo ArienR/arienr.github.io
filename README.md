@@ -2,6 +2,7 @@
 
 ### Stack
 
+- Cloudflare Workers ([media-api](https://github.com/ArienR/media-api))
 - React
 - Vite
 - TypeScript
